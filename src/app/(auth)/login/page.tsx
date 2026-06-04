@@ -30,30 +30,34 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-      {/* Background gradients */}
+    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4">
+      {/* Green glow effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-violet-600/15 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-indigo-600/15 blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-green-500/10 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-green-600/10 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-green-500/5 blur-3xl" />
       </div>
 
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
-            <span className="text-white font-bold">F</span>
+        <div className="flex flex-col items-center gap-3 mb-8">
+          <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center shadow-lg shadow-green-500/30">
+            <span className="text-white font-bold text-2xl">GP</span>
           </div>
-          <span className="font-bold text-xl text-white">FitTrack AI</span>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-white">Green Power Gym</h1>
+            <p className="text-green-400 text-sm font-medium mt-0.5">Stronger Every Day</p>
+          </div>
         </div>
 
         {/* Card */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-2xl">
-          <h1 className="text-2xl font-bold text-white mb-1">Welcome back</h1>
-          <p className="text-zinc-400 text-sm mb-8">Sign in to continue your fitness journey</p>
+        <div className="bg-[#1e293b] border border-[#334155] rounded-2xl p-8 shadow-2xl">
+          <h2 className="text-xl font-bold text-white mb-1">Welcome back</h2>
+          <p className="text-slate-400 text-sm mb-6">Sign in to your admin account</p>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
                 Email address
               </label>
               <input
@@ -61,12 +65,12 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="you@example.com"
-                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                placeholder="admin@greenpower.gym"
+                className="w-full px-4 py-3 bg-[#0f172a] border border-[#334155] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
                 Password
               </label>
               <input
@@ -75,33 +79,31 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="••••••••"
-                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-[#0f172a] border border-[#334155] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all shadow-lg shadow-violet-500/20"
+              className="w-full py-3 bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all shadow-lg shadow-green-500/20"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-zinc-500 text-sm">
-              Don&apos;t have an account?{' '}
-              <Link href="/signup" className="text-violet-400 hover:text-violet-300 font-medium">
-                Sign up
+            <p className="text-slate-500 text-sm">
+              Need an account?{' '}
+              <Link href="/signup" className="text-green-400 hover:text-green-300 font-medium transition-colors">
+                Create one
               </Link>
             </p>
           </div>
         </div>
 
-        <div className="mt-6 text-center">
-          <Link href="/" className="text-zinc-600 hover:text-zinc-400 text-sm transition-colors">
-            &larr; Back to home
-          </Link>
+        <div className="mt-4 text-center">
+          <p className="text-slate-600 text-xs">Green Power Gym ERP &copy; {new Date().getFullYear()}</p>
         </div>
       </div>
     </div>
