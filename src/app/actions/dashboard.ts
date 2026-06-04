@@ -22,7 +22,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       expiredMembersRes,
       expiringThisWeekRes,
       revenueRes,
-      newLeadsRes,
       dueTodayRes,
     ] = await Promise.all([
       supabase.from('members').select('id', { count: 'exact', head: true }),
@@ -46,10 +45,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         .select('amount')
         .gte('payment_date', firstOfMonth),
       supabase
-        .from('leads')
-        .select('id', { count: 'exact', head: true })
-        .gte('created_at', firstOfMonth),
-      supabase
         .from('memberships')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'active')
@@ -69,7 +64,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       expiredMembers: expiredMembersRes.count ?? 0,
       expiringThisWeek: expiringThisWeekRes.count ?? 0,
       revenueThisMonth,
-      newLeads: newLeadsRes.count ?? 0,
       dueToday: dueTodayRes.count ?? 0,
     }
   } catch (err) {
@@ -80,7 +74,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       expiredMembers: 0,
       expiringThisWeek: 0,
       revenueThisMonth: 0,
-      newLeads: 0,
       dueToday: 0,
     }
   }

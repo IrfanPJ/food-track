@@ -7,7 +7,7 @@ import {
   LayoutDashboard,
   Users,
   DollarSign,
-  Target,
+  MessageCircle,
   MoreHorizontal,
 } from 'lucide-react'
 
@@ -15,7 +15,7 @@ const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/members', icon: Users, label: 'Members' },
   { href: '/payments', icon: DollarSign, label: 'Payments' },
-  { href: '/leads', icon: Target, label: 'Leads' },
+  { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
   { href: '/settings', icon: MoreHorizontal, label: 'More' },
 ]
 

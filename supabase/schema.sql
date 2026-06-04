@@ -167,28 +167,6 @@ CREATE POLICY "Authenticated users can view assignments" ON coach_members FOR SE
 CREATE POLICY "Staff can manage assignments" ON coach_members FOR ALL USING (auth.uid() IS NOT NULL);
 
 -- ============================================================
--- LEADS (CRM)
--- ============================================================
-CREATE TABLE IF NOT EXISTS leads (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT NOT NULL,
-  mobile TEXT NOT NULL,
-  email TEXT,
-  source TEXT NOT NULL DEFAULT 'walk_in'
-    CHECK (source IN ('walk_in', 'referral', 'social_media', 'phone', 'website', 'other')),
-  followup_date DATE,
-  status TEXT NOT NULL DEFAULT 'new'
-    CHECK (status IN ('new', 'contacted', 'converted', 'lost')),
-  notes TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Authenticated users can view leads" ON leads FOR SELECT USING (auth.uid() IS NOT NULL);
-CREATE POLICY "Staff can manage leads" ON leads FOR ALL USING (auth.uid() IS NOT NULL);
-
--- ============================================================
 -- WHATSAPP LOGS
 -- ============================================================
 CREATE TABLE IF NOT EXISTS whatsapp_logs (

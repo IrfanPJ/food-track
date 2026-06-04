@@ -1,16 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { BarChart3, Download, Users, DollarSign, Target, TrendingUp } from 'lucide-react'
+import { BarChart3, Download, Users, DollarSign, TrendingUp } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { getMembers } from '@/app/actions/members'
 import { getPayments, getMonthlyRevenue } from '@/app/actions/payments'
-import { getLeads } from '@/app/actions/leads'
 import { formatDate, formatCurrency, getMembershipStatus } from '@/lib/utils'
-import type { Member, Payment, Lead } from '@/types'
+import type { Member, Payment } from '@/types'
 
-const TABS = ['Members', 'Financial', 'Leads'] as const
+const TABS = ['Members', 'Financial'] as const
 type TabType = typeof TABS[number]
 
 function exportToExcel(data: Record<string, unknown>[], filename: string) {
@@ -24,17 +23,15 @@ export default function ReportsPage() {
   const [tab, setTab] = useState<TabType>('Members')
   const [members, setMembers] = useState<Member[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
-  const [leads, setLeads] = useState<Lead[]>([])
   const [monthlyRevenue, setMonthlyRevenue] = useState<{ month: string; revenue: number }[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
       setLoading(true)
-      const [m, p, l, mr] = await Promise.all([getMembers(), getPayments(), getLeads(), getMonthlyRevenue()])
+      const [m, p, mr] = await Promise.all([getMembers(), getPayments(), getMonthlyRevenue()])
       setMembers(m)
       setPayments(p)
-      setLeads(l)
       setMonthlyRevenue(mr.reverse())
       setLoading(false)
     }
@@ -44,10 +41,7 @@ export default function ReportsPage() {
   const active = members.filter(m => m.active_membership && getMembershipStatus(m.active_membership.expiry_date) === 'active')
   const expired = members.filter(m => !m.active_membership || getMembershipStatus(m.active_membership.expiry_date) === 'expired')
   const expiringSoon = members.filter(m => m.active_membership && getMembershipStatus(m.active_membership.expiry_date) === 'expiring_soon')
-
   const totalRevenue = payments.reduce((s, p) => s + p.amount, 0)
-  const converted = leads.filter(l => l.status === 'converted')
-  const conversionRate = leads.length > 0 ? Math.round((converted.length / leads.length) * 100) : 0
 
   function exportMembers() {
     exportToExcel(members.map(m => ({
@@ -72,18 +66,6 @@ export default function ReportsPage() {
     })), 'payments-report')
   }
 
-  function exportLeads() {
-    exportToExcel(leads.map(l => ({
-      'Name': l.name,
-      'Mobile': l.mobile,
-      'Source': l.source,
-      'Status': l.status,
-      'Follow-up': l.followup_date ? formatDate(l.followup_date) : '',
-      'Notes': l.notes ?? '',
-      'Created': formatDate(l.created_at),
-    })), 'leads-report')
-  }
-
   if (loading) {
     return (
       <div className="space-y-6">
@@ -97,11 +79,9 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Reports</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Analytics and data exports</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-white">Reports</h1>
+        <p className="text-slate-400 text-sm mt-0.5">Analytics and data exports</p>
       </div>
 
       {/* Tabs */}
@@ -119,10 +99,10 @@ export default function ReportsPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Total', value: members.length, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-              { label: 'Active', value: active.length, color: 'text-green-400', bg: 'bg-green-500/10' },
-              { label: 'Expiring Soon', value: expiringSoon.length, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
-              { label: 'Expired', value: expired.length, color: 'text-red-400', bg: 'bg-red-500/10' },
+              { label: 'Total', value: members.length, color: 'text-blue-400' },
+              { label: 'Active', value: active.length, color: 'text-green-400' },
+              { label: 'Expiring Soon', value: expiringSoon.length, color: 'text-yellow-400' },
+              { label: 'Expired', value: expired.length, color: 'text-red-400' },
             ].map(s => (
               <div key={s.label} className="bg-[#1e293b] rounded-2xl border border-[#334155] p-5">
                 <p className={`text-3xl font-extrabold ${s.color}`}>{s.value}</p>
@@ -210,50 +190,6 @@ export default function ReportsPage() {
               className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium">
               <Download className="w-4 h-4" /> Export Excel
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Leads Tab */}
-      {tab === 'Leads' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { label: 'Total Leads', value: leads.length, color: 'text-blue-400' },
-              { label: 'Converted', value: converted.length, color: 'text-green-400' },
-              { label: 'Pending', value: leads.filter(l => l.status === 'new' || l.status === 'contacted').length, color: 'text-yellow-400' },
-              { label: 'Conversion Rate', value: `${conversionRate}%`, color: 'text-purple-400' },
-            ].map(s => (
-              <div key={s.label} className="bg-[#1e293b] rounded-2xl border border-[#334155] p-5">
-                <p className={`text-3xl font-extrabold ${s.color}`}>{s.value}</p>
-                <p className="text-slate-400 text-sm mt-1">{s.label}</p>
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-end">
-            <button onClick={exportLeads}
-              className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium">
-              <Download className="w-4 h-4" /> Export Excel
-            </button>
-          </div>
-          <div className="bg-[#1e293b] rounded-2xl border border-[#334155] p-5">
-            <h3 className="text-white font-semibold mb-4">Leads by Source</h3>
-            <div className="space-y-3">
-              {['walk_in','referral','social_media','phone','website','other'].map(src => {
-                const count = leads.filter(l => l.source === src).length
-                const pct = leads.length > 0 ? Math.round((count / leads.length) * 100) : 0
-                const labels: Record<string, string> = { walk_in: 'Walk-in', referral: 'Referral', social_media: 'Social Media', phone: 'Phone', website: 'Website', other: 'Other' }
-                return (
-                  <div key={src} className="flex items-center gap-3">
-                    <div className="w-24 text-slate-400 text-sm">{labels[src]}</div>
-                    <div className="flex-1 bg-[#0f172a] rounded-full h-2 overflow-hidden">
-                      <div className="h-full bg-green-500 rounded-full" style={{ width: `${pct}%` }} />
-                    </div>
-                    <div className="text-slate-400 text-sm w-16 text-right">{count} ({pct}%)</div>
-                  </div>
-                )
-              })}
-            </div>
           </div>
         </div>
       )}

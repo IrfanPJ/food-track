@@ -72,20 +72,6 @@ export interface Coach {
   created_at: string
 }
 
-export type LeadStatus = 'new' | 'contacted' | 'converted' | 'lost'
-export type LeadSource = 'walk_in' | 'referral' | 'social_media' | 'phone' | 'website' | 'other'
-
-export interface Lead {
-  id: string
-  name: string
-  mobile: string
-  email?: string
-  source: LeadSource
-  followup_date?: string
-  status: LeadStatus
-  notes?: string
-  created_at: string
-}
 
 export interface WhatsAppLog {
   id: string
@@ -104,7 +90,6 @@ export interface DashboardStats {
   expiredMembers: number
   expiringThisWeek: number
   revenueThisMonth: number
-  newLeads: number
   dueToday: number
 }
 

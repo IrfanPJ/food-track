@@ -5,7 +5,6 @@ import {
   Clock,
   IndianRupee,
   AlertCircle,
-  Target,
   MessageCircle,
 } from 'lucide-react'
 import { getDashboardStats, getRecentMembers, getExpiringMembers } from '@/app/actions/dashboard'
@@ -88,13 +87,6 @@ export default async function DashboardPage() {
       icon: AlertCircle,
       iconBg: 'bg-red-500/10',
       iconColor: 'text-red-400',
-    },
-    {
-      label: 'New Leads',
-      value: stats.newLeads,
-      icon: Target,
-      iconBg: 'bg-purple-500/10',
-      iconColor: 'text-purple-400',
     },
   ]
 
