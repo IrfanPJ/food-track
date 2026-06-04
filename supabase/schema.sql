@@ -1,205 +1,213 @@
--- FitTrack AI Database Schema
+-- Green Power Gym ERP Database Schema
 -- Run this in your Supabase SQL editor
 
--- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================================
--- PROFILES
+-- USER PROFILES
 -- ============================================================
-CREATE TABLE IF NOT EXISTS profiles (
+CREATE TABLE IF NOT EXISTS user_profiles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE NOT NULL,
   name TEXT NOT NULL DEFAULT '',
   email TEXT NOT NULL DEFAULT '',
-  avatar_url TEXT,
-  weight DECIMAL(5,2) NOT NULL DEFAULT 70,
-  height DECIMAL(5,2) NOT NULL DEFAULT 175,
-  goal TEXT NOT NULL DEFAULT 'improve_fitness'
-    CHECK (goal IN ('lose_weight', 'maintain', 'gain_muscle', 'improve_fitness')),
-  calories_target INTEGER NOT NULL DEFAULT 2000,
-  protein_target INTEGER NOT NULL DEFAULT 150,
-  carbs_target INTEGER NOT NULL DEFAULT 200,
-  fat_target INTEGER NOT NULL DEFAULT 65,
-  water_target INTEGER NOT NULL DEFAULT 8,
-  sleep_target INTEGER NOT NULL DEFAULT 8,
-  workout_split TEXT NOT NULL DEFAULT 'push-pull-legs',
+  role TEXT NOT NULL DEFAULT 'receptionist'
+    CHECK (role IN ('admin', 'receptionist', 'coach')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- RLS for profiles
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = user_id);
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view all profiles" ON user_profiles FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Users can insert own profile" ON user_profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own profile" ON user_profiles FOR UPDATE USING (auth.uid() = user_id);
 
 -- ============================================================
--- FOODS (food database)
+-- MEMBERSHIP PLANS
 -- ============================================================
-CREATE TABLE IF NOT EXISTS foods (
+CREATE TABLE IF NOT EXISTS membership_plans (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
-  calories DECIMAL(8,2) NOT NULL DEFAULT 0,
-  protein DECIMAL(8,2) NOT NULL DEFAULT 0,
-  carbs DECIMAL(8,2) NOT NULL DEFAULT 0,
-  fat DECIMAL(8,2) NOT NULL DEFAULT 0,
-  serving_size DECIMAL(8,2) NOT NULL DEFAULT 100,
-  serving_unit TEXT NOT NULL DEFAULT 'g',
-  is_favorite BOOLEAN NOT NULL DEFAULT false,
+  duration_months INTEGER NOT NULL,
+  fee DECIMAL(10,2) NOT NULL,
+  description TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-ALTER TABLE foods ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage own foods" ON foods FOR ALL USING (auth.uid() = user_id);
+ALTER TABLE membership_plans ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can view plans" ON membership_plans FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Admins can manage plans" ON membership_plans FOR ALL USING (auth.uid() IS NOT NULL);
+
+INSERT INTO membership_plans (name, duration_months, fee, description) VALUES
+  ('Monthly', 1, 1000, 'Monthly membership'),
+  ('Quarterly', 3, 2700, '3 month membership - save 10%'),
+  ('Half-Yearly', 6, 5000, '6 month membership - save 17%'),
+  ('Annual', 12, 9000, 'Annual membership - save 25%');
 
 -- ============================================================
--- MEAL LOGS
+-- MEMBERS
 -- ============================================================
-CREATE TABLE IF NOT EXISTS meal_logs (
+CREATE TABLE IF NOT EXISTS members (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  food_id UUID REFERENCES foods(id) ON DELETE SET NULL,
-  food_name TEXT NOT NULL,
-  calories DECIMAL(8,2) NOT NULL DEFAULT 0,
-  protein DECIMAL(8,2) NOT NULL DEFAULT 0,
-  carbs DECIMAL(8,2) NOT NULL DEFAULT 0,
-  fat DECIMAL(8,2) NOT NULL DEFAULT 0,
-  quantity DECIMAL(8,2) NOT NULL DEFAULT 1,
-  meal_type TEXT NOT NULL DEFAULT 'breakfast'
-    CHECK (meal_type IN ('breakfast', 'lunch', 'dinner', 'snack', 'pre_workout', 'post_workout')),
-  logged_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  member_id INTEGER UNIQUE NOT NULL,
+  full_name TEXT NOT NULL,
+  mobile TEXT NOT NULL,
+  email TEXT,
+  address TEXT,
+  gender TEXT NOT NULL DEFAULT 'male' CHECK (gender IN ('male', 'female', 'other')),
+  join_date DATE NOT NULL DEFAULT CURRENT_DATE,
   notes TEXT,
-  completed BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE members ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can view members" ON members FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Staff can insert members" ON members FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "Staff can update members" ON members FOR UPDATE USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Admins can delete members" ON members FOR DELETE USING (auth.uid() IS NOT NULL);
+
+CREATE INDEX IF NOT EXISTS idx_members_member_id ON members(member_id);
+CREATE INDEX IF NOT EXISTS idx_members_mobile ON members(mobile);
+CREATE INDEX IF NOT EXISTS idx_members_name ON members(full_name);
+
+-- ============================================================
+-- MEMBERSHIPS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS memberships (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  member_id UUID REFERENCES members(id) ON DELETE CASCADE NOT NULL,
+  plan_id UUID REFERENCES membership_plans(id) NOT NULL,
+  start_date DATE NOT NULL,
+  expiry_date DATE NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired', 'cancelled')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-ALTER TABLE meal_logs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage own meal logs" ON meal_logs FOR ALL USING (auth.uid() = user_id);
+ALTER TABLE memberships ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can view memberships" ON memberships FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Staff can manage memberships" ON memberships FOR ALL USING (auth.uid() IS NOT NULL);
 
-CREATE INDEX idx_meal_logs_user_date ON meal_logs(user_id, logged_at);
+CREATE INDEX IF NOT EXISTS idx_memberships_member_id ON memberships(member_id);
+CREATE INDEX IF NOT EXISTS idx_memberships_expiry ON memberships(expiry_date);
+CREATE INDEX IF NOT EXISTS idx_memberships_status ON memberships(status);
 
 -- ============================================================
--- WORKOUTS
+-- PAYMENTS
 -- ============================================================
-CREATE TABLE IF NOT EXISTS workouts (
+CREATE SEQUENCE IF NOT EXISTS receipt_seq START 1;
+
+CREATE TABLE IF NOT EXISTS payments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  name TEXT NOT NULL,
-  type TEXT NOT NULL DEFAULT 'custom'
-    CHECK (type IN ('push', 'pull', 'legs', 'full_body', 'cardio', 'rest', 'custom')),
-  scheduled_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  status TEXT NOT NULL DEFAULT 'pending'
-    CHECK (status IN ('pending', 'in_progress', 'completed', 'missed')),
+  member_id UUID REFERENCES members(id) ON DELETE CASCADE NOT NULL,
+  membership_id UUID REFERENCES memberships(id) ON DELETE SET NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  payment_method TEXT NOT NULL DEFAULT 'cash' CHECK (payment_method IN ('cash', 'upi', 'bank_transfer')),
+  payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
   notes TEXT,
-  duration_minutes INTEGER,
+  receipt_number TEXT UNIQUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-ALTER TABLE workouts ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage own workouts" ON workouts FOR ALL USING (auth.uid() = user_id);
+ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can view payments" ON payments FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Staff can manage payments" ON payments FOR ALL USING (auth.uid() IS NOT NULL);
 
-CREATE INDEX idx_workouts_user_date ON workouts(user_id, scheduled_date);
+CREATE INDEX IF NOT EXISTS idx_payments_member_id ON payments(member_id);
+CREATE INDEX IF NOT EXISTS idx_payments_date ON payments(payment_date);
+
+CREATE OR REPLACE FUNCTION generate_receipt_number()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.receipt_number IS NULL THEN
+    NEW.receipt_number := 'GPG-' || TO_CHAR(NOW(), 'YYYYMM') || '-' || LPAD(nextval('receipt_seq')::TEXT, 4, '0');
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_receipt_number
+  BEFORE INSERT ON payments
+  FOR EACH ROW EXECUTE FUNCTION generate_receipt_number();
 
 -- ============================================================
--- EXERCISES
+-- COACHES
 -- ============================================================
-CREATE TABLE IF NOT EXISTS exercises (
+CREATE TABLE IF NOT EXISTS coaches (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  workout_id UUID REFERENCES workouts(id) ON DELETE CASCADE NOT NULL,
+  coach_id TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
-  sets INTEGER NOT NULL DEFAULT 3,
-  reps INTEGER NOT NULL DEFAULT 10,
-  weight DECIMAL(8,2) NOT NULL DEFAULT 0,
-  rest_seconds INTEGER NOT NULL DEFAULT 90,
+  mobile TEXT NOT NULL,
+  email TEXT,
+  specialization TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE coaches ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can view coaches" ON coaches FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Staff can manage coaches" ON coaches FOR ALL USING (auth.uid() IS NOT NULL);
+
+-- ============================================================
+-- COACH MEMBER ASSIGNMENTS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS coach_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  coach_id UUID REFERENCES coaches(id) ON DELETE CASCADE NOT NULL,
+  member_id UUID REFERENCES members(id) ON DELETE CASCADE NOT NULL,
+  assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(coach_id, member_id)
+);
+
+ALTER TABLE coach_members ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can view assignments" ON coach_members FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Staff can manage assignments" ON coach_members FOR ALL USING (auth.uid() IS NOT NULL);
+
+-- ============================================================
+-- LEADS (CRM)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS leads (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  mobile TEXT NOT NULL,
+  email TEXT,
+  source TEXT NOT NULL DEFAULT 'walk_in'
+    CHECK (source IN ('walk_in', 'referral', 'social_media', 'phone', 'website', 'other')),
+  followup_date DATE,
+  status TEXT NOT NULL DEFAULT 'new'
+    CHECK (status IN ('new', 'contacted', 'converted', 'lost')),
   notes TEXT,
-  order_index INTEGER NOT NULL DEFAULT 0
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-ALTER TABLE exercises ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage exercises of own workouts" ON exercises
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM workouts w
-      WHERE w.id = exercises.workout_id
-        AND w.user_id = auth.uid()
-    )
-  );
+ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can view leads" ON leads FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Staff can manage leads" ON leads FOR ALL USING (auth.uid() IS NOT NULL);
 
 -- ============================================================
--- INVENTORY ITEMS
+-- WHATSAPP LOGS
 -- ============================================================
-CREATE TABLE IF NOT EXISTS inventory_items (
+CREATE TABLE IF NOT EXISTS whatsapp_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  name TEXT NOT NULL,
-  quantity DECIMAL(10,2) NOT NULL DEFAULT 0,
-  unit TEXT NOT NULL DEFAULT 'g',
-  low_stock_threshold DECIMAL(10,2) NOT NULL DEFAULT 100,
-  category TEXT NOT NULL DEFAULT 'Other',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  member_id UUID REFERENCES members(id) ON DELETE CASCADE,
+  phone TEXT NOT NULL,
+  message TEXT NOT NULL,
+  message_type TEXT NOT NULL DEFAULT 'custom'
+    CHECK (message_type IN ('due_today', 'due_in_3_days', 'expired', 'custom')),
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  status TEXT NOT NULL DEFAULT 'sent' CHECK (status IN ('sent', 'failed', 'pending'))
 );
 
-ALTER TABLE inventory_items ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage own inventory" ON inventory_items FOR ALL USING (auth.uid() = user_id);
+ALTER TABLE whatsapp_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can view logs" ON whatsapp_logs FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Staff can insert logs" ON whatsapp_logs FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
 -- ============================================================
--- SHOPPING ITEMS
--- ============================================================
-CREATE TABLE IF NOT EXISTS shopping_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  name TEXT NOT NULL,
-  quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
-  unit TEXT NOT NULL DEFAULT 'piece',
-  completed BOOLEAN NOT NULL DEFAULT false,
-  category TEXT NOT NULL DEFAULT 'Other',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-ALTER TABLE shopping_items ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage own shopping list" ON shopping_items FOR ALL USING (auth.uid() = user_id);
-
--- ============================================================
--- CHECKLIST ITEMS
--- ============================================================
-CREATE TABLE IF NOT EXISTS checklist_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  title TEXT NOT NULL,
-  category TEXT NOT NULL DEFAULT 'custom'
-    CHECK (category IN ('meal', 'workout', 'water', 'sleep', 'supplement', 'custom')),
-  completed BOOLEAN NOT NULL DEFAULT false,
-  target_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  streak INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-ALTER TABLE checklist_items ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage own checklist" ON checklist_items FOR ALL USING (auth.uid() = user_id);
-
-CREATE INDEX idx_checklist_user_date ON checklist_items(user_id, target_date);
-
--- ============================================================
--- PROGRESS LOGS (weight tracking)
--- ============================================================
-CREATE TABLE IF NOT EXISTS progress_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  weight DECIMAL(5,2) NOT NULL,
-  logged_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  notes TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-ALTER TABLE progress_logs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage own progress logs" ON progress_logs FOR ALL USING (auth.uid() = user_id);
-
-CREATE INDEX idx_progress_user_date ON progress_logs(user_id, logged_at);
-
--- ============================================================
--- FUNCTION: Auto-update profile updated_at
+-- TRIGGERS
 -- ============================================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -209,7 +217,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_profiles_updated_at
-  BEFORE UPDATE ON profiles
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_members_updated_at BEFORE UPDATE ON members FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_coaches_updated_at BEFORE UPDATE ON coaches FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_leads_updated_at BEFORE UPDATE ON leads FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_user_profiles_updated_at BEFORE UPDATE ON user_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

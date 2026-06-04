@@ -4,57 +4,31 @@ import { ThemeProvider } from 'next-themes'
 import { Toaster } from 'sonner'
 import './globals.css'
 
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-sans',
-})
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
 export const metadata: Metadata = {
-  title: 'FitTrack AI - Your Personal Fitness & Nutrition Coach',
-  description:
-    'Track calories, workouts, and reach your fitness goals with AI-powered coaching.',
-  manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'FitTrack AI',
-  },
-  icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
-  },
+  title: 'Green Power Gym – Stronger Every Day',
+  description: 'Professional Gym ERP & CRM for managing members, memberships, payments, and more.',
+  icons: { icon: '/favicon.ico' },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#7c3aed',
+  themeColor: '#22c55e',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
+      <body className="min-h-screen bg-[#0f172a] text-[#f8fafc] antialiased">
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
           {children}
           <Toaster
             position="top-right"
             toastOptions={{
-              style: {
-                background: 'var(--card)',
-                color: 'var(--card-foreground)',
-                border: '1px solid var(--border)',
-              },
+              style: { background: '#1e293b', color: '#f8fafc', border: '1px solid #334155' },
             }}
           />
         </ThemeProvider>

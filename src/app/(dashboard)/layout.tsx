@@ -1,15 +1,23 @@
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 import Sidebar from '@/components/layout/Sidebar'
-import MobileNav from '@/components/layout/MobileNav'
 import TopBar from '@/components/layout/TopBar'
-import FloatingActions from '@/components/layout/FloatingActions'
+import MobileNav from '@/components/layout/MobileNav'
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
   return (
-    <div className="flex min-h-screen bg-zinc-950">
+    <div className="flex min-h-screen bg-[#0f172a]">
       <Sidebar />
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -21,7 +29,6 @@ export default function DashboardLayout({
       </div>
 
       <MobileNav />
-      <FloatingActions />
     </div>
   )
 }

@@ -1,128 +1,121 @@
-export interface Profile {
+export type UserRole = 'admin' | 'receptionist' | 'coach'
+
+export interface UserProfile {
   id: string
   user_id: string
   name: string
   email: string
-  avatar_url?: string
-  weight: number
-  height: number
-  goal: 'lose_weight' | 'maintain' | 'gain_muscle' | 'improve_fitness'
-  calories_target: number
-  protein_target: number
-  carbs_target: number
-  fat_target: number
-  water_target: number
-  sleep_target: number
-  workout_split: string
-  created_at: string
-  updated_at: string
-}
-
-export interface Food {
-  id: string
-  user_id: string
-  name: string
-  calories: number
-  protein: number
-  carbs: number
-  fat: number
-  serving_size: number
-  serving_unit: string
-  is_favorite: boolean
+  role: UserRole
   created_at: string
 }
 
-export interface MealLog {
+export interface Member {
   id: string
-  user_id: string
-  food_id?: string
-  food_name: string
-  calories: number
-  protein: number
-  carbs: number
-  fat: number
-  quantity: number
-  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'pre_workout' | 'post_workout'
-  logged_at: string
+  member_id: number
+  full_name: string
+  mobile: string
+  email?: string
+  address?: string
+  gender: 'male' | 'female' | 'other'
+  join_date: string
   notes?: string
-  completed: boolean
+  created_at: string
+  active_membership?: Membership
 }
 
-export interface Workout {
+export interface MembershipPlan {
   id: string
-  user_id: string
   name: string
-  type: 'push' | 'pull' | 'legs' | 'full_body' | 'cardio' | 'rest' | 'custom'
-  scheduled_date: string
-  status: 'pending' | 'in_progress' | 'completed' | 'missed'
+  duration_months: number
+  fee: number
+  description?: string
+  is_active: boolean
+}
+
+export interface Membership {
+  id: string
+  member_id: string
+  plan_id: string
+  start_date: string
+  expiry_date: string
+  amount: number
+  status: 'active' | 'expired' | 'cancelled'
+  created_at: string
+  member?: Member
+  plan?: MembershipPlan
+}
+
+export type PaymentMethod = 'cash' | 'upi' | 'bank_transfer'
+
+export interface Payment {
+  id: string
+  member_id: string
+  membership_id?: string
+  amount: number
+  payment_method: PaymentMethod
+  payment_date: string
   notes?: string
-  duration_minutes?: number
+  receipt_number?: string
+  created_at: string
+  member?: Member
+  membership?: Membership
+}
+
+export interface Coach {
+  id: string
+  coach_id: string
+  name: string
+  mobile: string
+  email?: string
+  specialization?: string
+  is_active: boolean
   created_at: string
 }
 
-export interface Exercise {
+export type LeadStatus = 'new' | 'contacted' | 'converted' | 'lost'
+export type LeadSource = 'walk_in' | 'referral' | 'social_media' | 'phone' | 'website' | 'other'
+
+export interface Lead {
   id: string
-  workout_id: string
   name: string
-  sets: number
-  reps: number
-  weight: number
-  rest_seconds: number
+  mobile: string
+  email?: string
+  source: LeadSource
+  followup_date?: string
+  status: LeadStatus
   notes?: string
-  order_index: number
-}
-
-export interface InventoryItem {
-  id: string
-  user_id: string
-  name: string
-  quantity: number
-  unit: string
-  low_stock_threshold: number
-  category: string
   created_at: string
 }
 
-export interface ShoppingItem {
+export interface WhatsAppLog {
   id: string
-  user_id: string
-  name: string
-  quantity: number
-  unit: string
-  completed: boolean
-  category: string
-  created_at: string
+  member_id: string
+  phone: string
+  message: string
+  message_type: 'due_today' | 'due_in_3_days' | 'expired' | 'custom'
+  sent_at: string
+  status: 'sent' | 'failed' | 'pending'
+  member?: Member
 }
 
-export interface ChecklistItem {
-  id: string
-  user_id: string
-  title: string
-  category: 'meal' | 'workout' | 'water' | 'sleep' | 'supplement' | 'custom'
-  completed: boolean
-  target_date: string
-  streak: number
-  created_at: string
+export interface DashboardStats {
+  totalMembers: number
+  activeMembers: number
+  expiredMembers: number
+  expiringThisWeek: number
+  revenueThisMonth: number
+  newLeads: number
+  dueToday: number
 }
 
-export interface AIMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  created_at: string
-}
-
-export interface ProgressLog {
-  id: string
-  user_id: string
-  weight: number
-  logged_at: string
+export interface ImportMemberRow {
+  member_id?: number
+  full_name: string
+  mobile: string
+  join_date?: string
+  plan_name?: string
+  expiry_date?: string
+  amount_paid?: number
+  balance?: number
   notes?: string
-}
-
-export interface MacroSummary {
-  calories: number
-  protein: number
-  carbs: number
-  fat: number
 }
